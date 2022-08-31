@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 import sys
 
 # Number of images to be grabbed.
-countOfImagesToGrab = 4000
+countOfImagesToGrab = 3000
 
 # The exit code of the sample application.
 exitCode = 0
@@ -28,11 +28,12 @@ try:
     camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
     camera.Open()
     # Change acquisition frame rate
-    camera.ExposureTime.SetValue(100)
-    camera.Width = (100)
-    camera.Height = (100)
+    camera.ExposureTime.SetValue(130)
+    camera.Width = 100 #(720*16//9)
+    camera.Height =100 #(720)
+    # 720 * 16 // 9, 720
     camera.AcquisitionFrameRateEnable = True
-    camera.AcquisitionFrameRate = 500
+    camera.AcquisitionFrameRate = 300
     # Print the model name of the camera.
     print("Using device ", camera.GetDeviceInfo().GetModelName())
 
@@ -55,7 +56,7 @@ try:
     results = []
     while camera.IsGrabbing():
         # Wait for an image and then retrieve it. A timeout of 5000 ms is used.
-        grabResult = camera.RetrieveResult(50, pylon.TimeoutHandling_ThrowException)
+        grabResult = camera.RetrieveResult(20, pylon.TimeoutHandling_ThrowException)
 
         # Image grabbed successfully?
         if grabResult.GrabSucceeded():
@@ -67,6 +68,7 @@ try:
             #print("SizeX: ", grabResult.Width)
             #print("SizeY: ", grabResult.Height)
             img = grabResult.Array
+            # import ipdb; ipdb.set_trace()
             img = np.array(img)
             #print('this is size', img.shape)
             #plt.imshow(img)
@@ -77,9 +79,10 @@ try:
         grabResult.Release()
         results.append(img)
     results=np.array(results)
-    print(results.shape)
+    print('shape',img.shape)
     print(results)
     camera.Close()
+
 
 
 except genicam.GenericException as e:
@@ -88,33 +91,54 @@ except genicam.GenericException as e:
     print(e.GetDescription())
     exitCode = 1
 
+#
+#
+# import cv2
+# import numpy
+# import os
+#
+# os.chdir(os.path.expanduser("~/Desktop"))
+# shape = (96, 100)
+# frame = results
+#
+# video_name = 'output.avi'
+# fps = 500
+# video = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'XVID'), fps, shape)
+#
+# for i in range(fps * 5):
+#     video.write(frame)
+#
+# video.release()
+#
+# cap = cv2.VideoCapture('output.avi')
+#
+# while (cap.isOpened()):
+#     ret, frame = cap.read()
+#
+#     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#     cv2.imshow('frame', gray)
+#
+#     if cv2.waitKey(1) & 0xFF == ord('q'):
+#         break
+#
+# cap.release()
+# cv2.destroyAllWindows()
 
-
-sys.exit(exitCode)
 
 import numpy as np
 import cv2
-import os
+size = 100,100
+duration = 2
+fps = 25
+out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (results.shape[2], results.shape[1]), False)
+# for _ in range(fps * duration):
+#     data = np.random.randint(0, 256, size, dtype='uint8')
+#     out.write(data)
 
-width = 100
-hieght = 96
-channel = 3
+# size =  (720, 1276)
+for frame in range(results.shape[0]):
+    data = results[frame]
+    out.write(data)
 
-
-# Syntax: VideoWriter_fourcc(c1, c2, c3, c4) # Concatenates 4 chars to a fourcc code
-#  cv2.VideoWriter_fourcc('M','J','P','G') or cv2.VideoWriter_fourcc(*'MJPG)
-
-fourcc = cv2.VideoWriter_fourcc(*'MP42')  # FourCC is a 4-byte code used to specify the video codec.
-# A video codec is software or hardware that compresses and decompresses digital video.
-# In the context of video compression, codec is a portmanteau of encoder and decoder,
-# while a device that only compresses is typically called an encoder, and one that only
-# decompresses is a decoder. Source - Wikipedia
-
-# Syntax: cv2.VideoWriter( filename, fourcc, fps, frameSize )
-video = cv2.VideoWriter('test.mp4', fourcc, float(500), (width, hieght))
-
-for frame_count in range(4000):
-    img = np.random.randint(0, 255, (hieght, width, channel), dtype=np.uint8)
-    video.write(img)
-
-video.release()
+out.release()
+# sys.exit(exitCode)
