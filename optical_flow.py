@@ -3,7 +3,7 @@ import numpy as np
 
 # The video feed is read in as
 # a VideoCapture object
-cap = cv.VideoCapture("output.mp4")
+cap = cv.VideoCapture("output4.mp4")
 
 # ret = a boolean return value from
 # getting the frame, first_frame = the
@@ -25,7 +25,10 @@ mask = np.zeros_like(first_frame)
 mask[..., 1] = 255
 
 new_t =[]
-for number in range(2500):
+
+tot_gray =[]
+
+for number in range(3100):
 
 
     # ret = a boolean return value from getting
@@ -40,15 +43,23 @@ for number in range(2500):
     # Converts each frame to grayscale - we previously
     # only converted the first frame to grayscale
     gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    gray1=gray[:,:]
+    gray1 = np.mean(gray1)
+    tot_gray.append(gray1)
 
     # Calculates dense optical flow by Farneback method
     flow = cv.calcOpticalFlowFarneback(prev_gray, gray,
                                        None,
                                        0.5, 3, 15, 3, 5, 1.2, 0)
     #
-    t =flow[1,1,1]
+
+    t =flow[:,:,1]
+
+
+    t=np.mean(t)
+    #print('flow', t)
     new_t.append(t)
-    print(t)
+
 
 
 
@@ -80,8 +91,30 @@ for number in range(2500):
 
 # The following frees up resources and
 # closes all windows
+
+
+import scipy.io
+from scipy.io import savemat
+scipy.io.savemat('file.mat', mdict={'tot_gray':tot_gray})
+
+
+
+import numpy as np
 import matplotlib.pyplot as plt
-plt.plot(new_t)
+from scipy import signal
+
+fs = 700  # Sampling frequency
+# Generate the time vector properly
+t = np.arange(3100) / fs
+signala = tot_gray # with frequency of 100
+
+w = fc / (fs / 2) # Normalize the frequency
+b, a = signal.butter(15, w, 'high')
+b, a = signal.butter(3, [0.2, 0.9], btype='band')
+output = signal.filtfilt(b, a, signala)
+plt.plot(t, output, label='filtered')
+plt.legend()
 plt.show()
 cap.release()
 cv.destroyAllWindows()
+
